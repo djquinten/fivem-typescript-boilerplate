@@ -41,18 +41,30 @@ function collectFiles(directory) {
 
 for (const context of ['client', 'server']) {
     const entryPoints = collectFiles(context);
-    for (const entryPoint of entryPoints) {
-        esbuild.build({
-            bundle: true,
-            entryPoints: [entryPoint],
-            outdir: `dist/${entryPoint.split('/').slice(0, -1).join('/')}`,
-            watch: production ? false : {
-                onRebuild: onRebuild(context),
-            },
-            ...(context === 'client' ? client : server),
-        }).catch((e) => {
-            console.error(e);
-            process.exit(1);
-        });
-    };
+
+    const entryFileContent = entryPoints.map((entryPoint) => {
+        return `import '../${entryPoint}';`;
+    }).join('\n');
+
+    if (!fs.existsSync('./cache')) fs.mkdirSync('./cache');
+    fs.writeFileSync(`./cache/${context}.ts`, entryFileContent);
+
+    esbuild.build({
+        bundle: true,
+        entryPoints: [`cache/${context}.ts`],
+        outfile: `dist/${context}.js`,
+        watch: production ? false : {
+            onRebuild: onRebuild(context),
+        },
+        ...(context === 'client' ? client : server),
+    }).then(() => {
+        if (production) {
+            fs.unlinkSync(`./cache/${context}.ts`);
+            const files = fs.readdirSync('./cache');
+            if (files.length === 0) fs.rmdirSync('./cache');
+        }
+    }).catch((e) => {
+        console.error(e);
+        process.exit(1);
+    });
 }
