@@ -2,9 +2,9 @@ fx_version 'bodacious'
 game 'gta5'
 
 client_scripts {
-    'dist/client/**/*.js',
+    'dist/client.js',
 }
 
 server_scripts {
-    'dist/server/**/*.js'
+    'dist/server.js'
 }
